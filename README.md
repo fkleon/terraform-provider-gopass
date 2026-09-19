@@ -26,7 +26,7 @@ as **ephemeral values** - credentials that are never stored in state or plan fil
 ### From Source
 
 ```bash
-git clone https://git.ingo-struck.com/opentofu/terraform-provider-gopass.git
+git clone https://github.com/istr/terraform-provider-gopass.git
 cd terraform-provider-gopass
 make install
 ```
@@ -382,7 +382,7 @@ After import, set `value_wo` and `value_wo_version` in your configuration.
 
 ```bash
 # Setup
-git clone https://git.ingo-struck.com/opentofu/terraform-provider-gopass.git
+git clone https://github.com/istr/terraform-provider-gopass.git
 cd terraform-provider-gopass
 go mod download
 

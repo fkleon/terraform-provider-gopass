@@ -8,7 +8,7 @@ import (
 	"flag"
 	"log"
 
-	"git.ingo-struck.com/opentofu/terraform-provider-gopass/internal/provider"
+	"github.com/istr/terraform-provider-gopass/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
