@@ -6,13 +6,15 @@ as **ephemeral values** or sensitive data source values, depending on how they a
 ## Features
 
 - 🔐 **Ephemeral reading**: Use ephemeral resources when secrets must not be persisted
-- 📖 **Data source reading**: Use `data.gopass_env` when a refreshable, sensitive state value is appropriate
+- 📖 **Data source reading**: Use `data.gopass_secret` or `data.gopass_env` when a refreshable, sensitive state value is appropriate
 - ✍️ **Write-only storage**: Store generated credentials to gopass without state leakage
 - 🔗 **Native gopass integration**: Links directly against gopass Go library - no subprocess spawning
 - 🔑 **Hardware token support**: Works with YubiKey, Nitrokey, etc. via GPG
 - 📁 **Multiple access patterns**:
   - `ephemeral gopass_secret`: Read single secret by path
+  - `data gopass_secret`: Read a single secret into sensitive state
   - `ephemeral gopass_env`: Read credential set as key-value map (like `gopassenv`)
+  - `data gopass_env`: Read a credential set into sensitive state
   - `resource gopass_secret`: Write secrets with write-only attributes
 - 🔄 **No state leakage for ephemeral resources**: Ephemeral resource credentials don't end up in terraform.tfstate
 
@@ -230,6 +232,29 @@ provider "aws" {
 |------|------|----------|-------------|
 | `path` | string | yes | Path prefix in the gopass store |
 | `credentials` | dynamic object | computed | Sensitive nested object. Slash-separated paths become nested attributes, for example `API/v2/KEY` becomes `credentials.API.v2.KEY`. |
+
+### gopass_secret data source
+
+Reads the first line of a single secret from gopass. The `value` attribute is sensitive, but data source results can be persisted in Terraform state. Use the `gopass_secret` ephemeral resource instead when the value must not be written to state or plan files.
+
+#### Example
+
+```hcl
+data "gopass_secret" "api_key" {
+  path = "services/api/token"
+}
+
+provider "example" {
+  api_key = data.gopass_secret.api_key.value
+}
+```
+
+#### Arguments and attributes
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `path` | string | yes | Path to the secret in the gopass store |
+| `value` | string | computed | Sensitive first-line secret value |
 
 ## Managed Resources
 

@@ -51,7 +51,7 @@ func (r *EnvDataSourceResource) Schema(ctx context.Context, req datasource.Schem
 }
 
 func (r *EnvDataSourceResource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	client, err := configureEnvClient(req.ProviderData)
+	client, err := configureGopassClient(req.ProviderData)
 	if err != nil {
 		resp.Diagnostics.AddError("Unexpected Provider Data", err.Error())
 		return

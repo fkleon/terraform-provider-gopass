@@ -69,7 +69,7 @@ provider "aws" {
 - No subprocess spawning - direct library access for better performance
 `
 
-func configureEnvClient(providerData any) (*GopassClient, error) {
+func configureGopassClient(providerData any) (*GopassClient, error) {
 	if providerData == nil {
 		return nil, nil
 	}

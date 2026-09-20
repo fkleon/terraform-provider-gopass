@@ -7,55 +7,46 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
-	"github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// Ensure implementation satisfies interface.
-var _ ephemeral.EphemeralResource = &SecretEphemeralResource{}
+var _ datasource.DataSource = &SecretDataSourceResource{}
 
-// SecretEphemeralResource reads a single secret from gopass.
-type SecretEphemeralResource struct {
-	client *GopassClient
+// SecretDataSourceResource reads a single secret from gopass into state.
+type SecretDataSourceResource struct {
+	SecretEphemeralResource
 }
 
-// SecretModel describes the data model.
-type SecretModel struct {
-	Path  types.String `tfsdk:"path"`
-	Value types.String `tfsdk:"value"`
+// NewSecretDataSourceResource creates a new data source.
+func NewSecretDataSourceResource() datasource.DataSource {
+	return &SecretDataSourceResource{}
 }
 
-// NewSecretEphemeralResource creates a new instance.
-func NewSecretEphemeralResource() ephemeral.EphemeralResource {
-	return &SecretEphemeralResource{}
-}
-
-func (r *SecretEphemeralResource) Metadata(ctx context.Context, req ephemeral.MetadataRequest, resp *ephemeral.MetadataResponse) {
+func (r *SecretDataSourceResource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_secret"
 }
 
-func (r *SecretEphemeralResource) Schema(ctx context.Context, req ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
+func (r *SecretDataSourceResource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Reads a single secret value from the gopass store.",
+		Description: "Reads a single secret value from the gopass store into Terraform state.",
 		MarkdownDescription: `
 Reads a single secret value from the gopass store using the native gopass library.
 
-The secret is retrieved during each Terraform operation and is **never stored**
-in state or plan files.
+The result is marked sensitive, but data source values can be stored in Terraform state.
+Use ` + "`ephemeral \"gopass_secret\"`" + ` when the secret must not be persisted.
 
 ## Example Usage
 
 ` + "```hcl" + `
-ephemeral "gopass_secret" "api_key" {
+data "gopass_secret" "api_key" {
   path = "services/api/token"
 }
 
-# Use the secret value
-provider "example" {
-  api_key = ephemeral.gopass_secret.api_key.value
-}
+# Use the sensitive secret value
+data.gopass_secret.api_key.value
 ` + "```" + `
 
 ## GPG/Hardware Token
@@ -80,7 +71,7 @@ Terraform operation that accesses the secret.
 	}
 }
 
-func (r *SecretEphemeralResource) Configure(ctx context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
+func (r *SecretDataSourceResource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	client, err := configureGopassClient(req.ProviderData)
 	if err != nil {
 		resp.Diagnostics.AddError("Unexpected Provider Data", err.Error())
@@ -89,22 +80,16 @@ func (r *SecretEphemeralResource) Configure(ctx context.Context, req ephemeral.C
 	r.client = client
 }
 
-func (r *SecretEphemeralResource) Open(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse) {
+func (r *SecretDataSourceResource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data SecretModel
-
-	// Read configuration
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	path := data.Path.ValueString()
+	tflog.Debug(ctx, "Reading secret from gopass", map[string]interface{}{"path": path})
 
-	tflog.Debug(ctx, "Reading secret from gopass", map[string]interface{}{
-		"path": path,
-	})
-
-	// Use native gopass library
 	value, err := r.client.GetSecret(ctx, path)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -115,11 +100,7 @@ func (r *SecretEphemeralResource) Open(ctx context.Context, req ephemeral.OpenRe
 	}
 
 	data.Value = types.StringValue(value)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	// Set result - this is NEVER written to state
-	resp.Diagnostics.Append(resp.Result.Set(ctx, &data)...)
-
-	tflog.Debug(ctx, "Successfully read secret from gopass", map[string]interface{}{
-		"path": path,
-	})
+	tflog.Debug(ctx, "Successfully read secret from gopass", map[string]interface{}{"path": path})
 }

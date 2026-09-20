@@ -204,11 +204,14 @@ func TestProvider_DataSources(t *testing.T) {
 
 	dataSources := p.DataSources(ctx)
 
-	if len(dataSources) != 1 {
-		t.Fatalf("expected one data source, got %d", len(dataSources))
+	if len(dataSources) != 2 {
+		t.Fatalf("expected two data sources, got %d", len(dataSources))
 	}
-	if _, ok := dataSources[0]().(*EnvDataSourceResource); !ok {
-		t.Fatalf("expected EnvDataSourceResource, got %T", dataSources[0]())
+	if _, ok := dataSources[0]().(*SecretDataSourceResource); !ok {
+		t.Fatalf("expected SecretDataSourceResource, got %T", dataSources[0]())
+	}
+	if _, ok := dataSources[1]().(*EnvDataSourceResource); !ok {
+		t.Fatalf("expected EnvDataSourceResource, got %T", dataSources[1]())
 	}
 }
 

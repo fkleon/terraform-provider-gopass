@@ -60,7 +60,7 @@ func (r *EnvEphemeralResource) Schema(ctx context.Context, req ephemeral.SchemaR
 }
 
 func (r *EnvEphemeralResource) Configure(ctx context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
-	client, err := configureEnvClient(req.ProviderData)
+	client, err := configureGopassClient(req.ProviderData)
 	if err != nil {
 		resp.Diagnostics.AddError("Unexpected Provider Data", err.Error())
 		return
