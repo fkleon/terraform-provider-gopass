@@ -40,65 +40,8 @@ func (r *EnvEphemeralResource) Metadata(ctx context.Context, req ephemeral.Metad
 
 func (r *EnvEphemeralResource) Schema(ctx context.Context, req ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Reads all secrets under a path as a nested object structure (environment variable style).",
-		MarkdownDescription: `
-Reads all secrets under a path as a nested object structure, using the native gopass library.
-
-Each secret under the path becomes accessible via dot-notation. The secret's first line becomes the value.
-Supports both flat and nested/deep path structures.
-
-This is ideal for reading credential sets with hierarchical organization:
-
-` + "```" + `
-env/terraform/scaleway/acme/
-├── SCW_ACCESS_KEY
-├── SCW_SECRET_KEY
-├── SCW_DEFAULT_PROJECT_ID
-└── API/
-    └── v2/
-        ├── ACCESS_KEY
-        └── SECRET_KEY
-` + "```" + `
-
-## Example Usage
-
-**Flat paths (immediate children):**
-
-` + "```hcl" + `
-ephemeral "gopass_env" "scaleway" {
-  path = "env/terraform/scaleway/acme"
-}
-
-provider "scaleway" {
-  access_key = ephemeral.gopass_env.scaleway.credentials.SCW_ACCESS_KEY
-  secret_key = ephemeral.gopass_env.scaleway.credentials.SCW_SECRET_KEY
-  project_id = ephemeral.gopass_env.scaleway.credentials.SCW_DEFAULT_PROJECT_ID
-}
-` + "```" + `
-
-**Nested paths (deep hierarchies):**
-
-` + "```hcl" + `
-ephemeral "gopass_env" "aws" {
-  path = "env/terraform/aws"
-}
-
-provider "aws" {
-  region     = ephemeral.gopass_env.aws.credentials.REGION
-  # Access nested paths: API/v2/ACCESS_KEY becomes credentials.API.v2.ACCESS_KEY
-  access_key = ephemeral.gopass_env.aws.credentials.API.v2.ACCESS_KEY
-  secret_key = ephemeral.gopass_env.aws.credentials.API.v2.SECRET_KEY
-}
-` + "```" + `
-
-## Notes
-
-- **Recursive**: All secrets under the path are included, regardless of depth
-- Each secret's first line is used as the value (gopass password convention)
-- Nested paths use dot-notation: ` + "`API/v2/KEY`" + ` becomes ` + "`credentials.API.v2.KEY`" + `
-- Supports mixed flat and nested structures in the same tree
-- No subprocess spawning - direct library access for better performance
-`,
+		Description:         "Reads all secrets under a path as a nested object structure (environment variable style).",
+		MarkdownDescription: envMarkdownDescription,
 
 		Attributes: map[string]schema.Attribute{
 			"path": schema.StringAttribute{
@@ -117,19 +60,11 @@ provider "aws" {
 }
 
 func (r *EnvEphemeralResource) Configure(ctx context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
-	if req.ProviderData == nil {
+	client, err := configureEnvClient(req.ProviderData)
+	if err != nil {
+		resp.Diagnostics.AddError("Unexpected Provider Data", err.Error())
 		return
 	}
-
-	client, ok := req.ProviderData.(*GopassClient)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Provider Data",
-			fmt.Sprintf("Expected *GopassClient, got: %T", req.ProviderData),
-		)
-		return
-	}
-
 	r.client = client
 }
 
@@ -147,8 +82,8 @@ func (r *EnvEphemeralResource) Open(ctx context.Context, req ephemeral.OpenReque
 		"path": basePath,
 	})
 
-	// Use native gopass library (now returns recursive/nested paths)
-	values, err := r.client.GetEnvSecrets(ctx, basePath)
+	// Use native gopass library (now returns recursive/nested paths).
+	dynamicValue, count, err := readEnvCredentials(ctx, r.client, basePath)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to read secrets",
@@ -157,19 +92,13 @@ func (r *EnvEphemeralResource) Open(ctx context.Context, req ephemeral.OpenReque
 		return
 	}
 
-	if len(values) == 0 {
+	if count == 0 {
 		resp.Diagnostics.AddWarning(
 			"No secrets found",
 			fmt.Sprintf("No secrets found under path %q", basePath),
 		)
 	}
 
-	// Build nested object structure from slash-separated paths
-	// This allows accessing "API/v2/ACCESS_KEY" as credentials.API.v2.ACCESS_KEY
-	objValue := buildNestedObject(values)
-
-	// Convert to dynamic
-	dynamicValue := types.DynamicValue(objValue)
 	data.Credentials = dynamicValue
 
 	// Set result - NEVER written to state
@@ -177,7 +106,7 @@ func (r *EnvEphemeralResource) Open(ctx context.Context, req ephemeral.OpenReque
 
 	tflog.Debug(ctx, "Successfully read env secrets from gopass", map[string]interface{}{
 		"path":  basePath,
-		"count": len(values),
+		"count": count,
 	})
 }
 
