@@ -1,11 +1,12 @@
 # terraform-provider-gopass
 
 OpenTofu/Terraform provider for reading secrets from [gopass](https://github.com/gopasspw/gopass)
-as **ephemeral values** - credentials that are never stored in state or plan files.
+as **ephemeral values** or sensitive data source values, depending on how they are consumed.
 
 ## Features
 
-- 🔐 **Ephemeral-only reading**: Secrets exist only during plan/apply, never persisted
+- 🔐 **Ephemeral reading**: Use ephemeral resources when secrets must not be persisted
+- 📖 **Data source reading**: Use `data.gopass_env` when a refreshable, sensitive state value is appropriate
 - ✍️ **Write-only storage**: Store generated credentials to gopass without state leakage
 - 🔗 **Native gopass integration**: Links directly against gopass Go library - no subprocess spawning
 - 🔑 **Hardware token support**: Works with YubiKey, Nitrokey, etc. via GPG
@@ -13,7 +14,7 @@ as **ephemeral values** - credentials that are never stored in state or plan fil
   - `ephemeral gopass_secret`: Read single secret by path
   - `ephemeral gopass_env`: Read credential set as key-value map (like `gopassenv`)
   - `resource gopass_secret`: Write secrets with write-only attributes
-- 🔄 **No state leakage**: Provider credentials don't end up in terraform.tfstate
+- 🔄 **No state leakage for ephemeral resources**: Ephemeral resource credentials don't end up in terraform.tfstate
 
 ## Requirements
 
@@ -75,7 +76,7 @@ provider "gopass" {
 
 ### Reading a Credential Set (gopassenv style)
 
-The `gopass_env` ephemeral resource reads all secrets under a path and makes them accessible via dot-notation. It supports both flat and nested/hierarchical path structures.
+The `gopass_env` ephemeral resource reads all secrets under a path and makes them accessible via dot-notation. It supports both flat and nested/hierarchical path structures. Use the data source form, `data.gopass_env`, when the resolved credentials may be stored in Terraform state (the value remains sensitive).
 
 #### Flat Structure (Immediate Children)
 
@@ -204,6 +205,31 @@ Reads all secrets under a path recursively as a nested object structure.
 - **Automatic nesting**: Converts slash-separated paths to nested objects
 - **Mixed structures**: Supports both flat and nested secrets in the same tree
 - **Dot-notation access**: All secrets accessible via standard Terraform dot-notation
+
+### gopass_env data source
+
+The `gopass_env` data source reads the same recursive, nested credential structure as the ephemeral resource, but exposes the result through normal Terraform data source state. Because data source results can be persisted in state, use the ephemeral resource instead when credentials must never be written to state or plan files.
+
+#### Example: Read a credential set from a data source
+
+```hcl
+data "gopass_env" "aws" {
+  path = "env/terraform/cloud/aws"
+}
+
+provider "aws" {
+  region     = data.gopass_env.aws.credentials.REGION
+  access_key = data.gopass_env.aws.credentials.API.v2.ACCESS_KEY
+  secret_key = data.gopass_env.aws.credentials.API.v2.SECRET_KEY
+}
+```
+
+#### Arguments and attributes
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `path` | string | yes | Path prefix in the gopass store |
+| `credentials` | dynamic object | computed | Sensitive nested object. Slash-separated paths become nested attributes, for example `API/v2/KEY` becomes `credentials.API.v2.KEY`. |
 
 ## Managed Resources
 
@@ -358,8 +384,9 @@ After import, set `value_wo` and `value_wo_version` in your configuration.
 
 ### What's Protected
 
-- ✅ Secrets never written to `terraform.tfstate`
-- ✅ Secrets never written to plan files
+- ✅ Secrets read through ephemeral resources are never written to `terraform.tfstate`
+- ✅ Secrets read through ephemeral resources are never written to plan files
+- ⚠️ Data source results are sensitive but may be written to Terraform state and plans
 - ✅ No subprocess spawning (no secrets in process arguments)
 - ✅ Hardware token provides physical authentication factor
 - ✅ Each operation requires fresh authentication

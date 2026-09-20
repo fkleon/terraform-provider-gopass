@@ -204,8 +204,12 @@ func TestProvider_DataSources(t *testing.T) {
 
 	dataSources := p.DataSources(ctx)
 
-	// May be empty if no data sources defined
-	_ = dataSources
+	if len(dataSources) != 1 {
+		t.Fatalf("expected one data source, got %d", len(dataSources))
+	}
+	if _, ok := dataSources[0]().(*EnvDataSourceResource); !ok {
+		t.Fatalf("expected EnvDataSourceResource, got %T", dataSources[0]())
+	}
 }
 
 func TestProvider_EphemeralResources(t *testing.T) {

@@ -46,11 +46,11 @@ func (p *GopassProvider) Metadata(ctx context.Context, req provider.MetadataRequ
 
 func (p *GopassProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The gopass provider enables reading secrets from a gopass password store as ephemeral values. " +
-			"Secrets are never stored in Terraform state or plan files.",
+		Description: "The gopass provider enables reading secrets from a gopass password store as ephemeral values or sensitive data source values. " +
+			"Ephemeral resource values are not stored in Terraform state or plan files.",
 		MarkdownDescription: `
 The gopass provider enables reading secrets from a [gopass](https://github.com/gopasspw/gopass)
-password store as **ephemeral values**.
+password store as **ephemeral values** or sensitive data source values.
 
 This provider links directly against the gopass library - no subprocess spawning required.
 
@@ -128,9 +128,11 @@ func (p *GopassProvider) Resources(ctx context.Context) []func() resource.Resour
 	}
 }
 
-// DataSources returns an empty slice - this provider only provides ephemeral resources.
+// DataSources returns the provider's data sources.
 func (p *GopassProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		NewEnvDataSourceResource,
+	}
 }
 
 // EphemeralResources returns the ephemeral resources this provider offers.
