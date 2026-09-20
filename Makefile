@@ -61,11 +61,11 @@ fmt:
 	go fmt ./...
 
 lint:
-	@which golangci-lint > /dev/null || (echo "Installing golangci-lint..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+	@which golangci-lint > /dev/null || (echo "Installing golangci-lint..." && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint)
 	golangci-lint run ./...
 
 test:
-	go test -v ./...
+	go test -v -coverprofile=coverage.out ./...
 
 # Test with actual gopass (requires gopass setup)
 test-integration:
