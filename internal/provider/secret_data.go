@@ -80,6 +80,7 @@ func (r *SecretDataSourceResource) Configure(ctx context.Context, req datasource
 	r.client = client
 }
 
+//nolint:gocritic // Terraform framework interface requirement.
 func (r *SecretDataSourceResource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data SecretModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)

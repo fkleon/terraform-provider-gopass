@@ -8,8 +8,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/istr/terraform-provider-gopass/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/istr/terraform-provider-gopass/internal/provider"
 )
 
 // version is set via ldflags at build time

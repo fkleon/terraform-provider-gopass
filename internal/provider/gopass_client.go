@@ -110,17 +110,11 @@ func (c *GopassClient) wrapStoreError(err error) error {
 	}
 
 	if strings.Contains(errStr, "permission denied") {
-		return fmt.Errorf("gopass store access denied: %w\n\n"+
-			"Unable to access the gopass store due to permission issues.\n"+
-			"Please check file permissions on your password store directory.", err)
+		return fmt.Errorf("gopass store access denied: %w; unable to access the gopass store due to permission issues; please check file permissions on your password store directory", err)
 	}
 
 	if strings.Contains(errStr, "gpg") || strings.Contains(errStr, "GPG") {
-		return fmt.Errorf("GPG error during gopass initialization: %w\n\n"+
-			"There was a problem with GPG. Please ensure:\n"+
-			"- gpg-agent is running\n"+
-			"- Your GPG key is available\n"+
-			"- If using a hardware token, it is connected", err)
+		return fmt.Errorf("gpg error during gopass initialization: %w; ensure gpg-agent is running, your GPG key is available, and any hardware token is connected", err)
 	}
 
 	// Generic error with context

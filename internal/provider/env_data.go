@@ -59,6 +59,7 @@ func (r *EnvDataSourceResource) Configure(ctx context.Context, req datasource.Co
 	r.client = client
 }
 
+//nolint:gocritic // Terraform framework interface requirement.
 func (r *EnvDataSourceResource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data EnvModel
 

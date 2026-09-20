@@ -76,12 +76,12 @@ func configureGopassClient(providerData any) (*GopassClient, error) {
 
 	client, ok := providerData.(*GopassClient)
 	if !ok {
-		return nil, fmt.Errorf("Expected *GopassClient, got: %T", providerData)
+		return nil, fmt.Errorf("expected *GopassClient, got: %T", providerData)
 	}
 	return client, nil
 }
 
-func readEnvCredentials(ctx context.Context, client *GopassClient, path string) (types.Dynamic, int, error) {
+func readEnvCredentials(ctx context.Context, client *GopassClient, path string) (dynamic types.Dynamic, count int, err error) {
 	values, err := client.GetEnvSecrets(ctx, path)
 	if err != nil {
 		return types.DynamicNull(), 0, err

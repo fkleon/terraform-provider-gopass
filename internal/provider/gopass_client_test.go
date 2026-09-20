@@ -498,7 +498,7 @@ func TestGopassClient_WrapStoreError(t *testing.T) {
 		{
 			name:           "gpg error",
 			inputError:     errors.New("gpg: error"),
-			expectedSubstr: "GPG error during gopass initialization",
+			expectedSubstr: "gpg error during gopass initialization",
 		},
 		{
 			name:           "generic error",
