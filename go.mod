@@ -1,6 +1,6 @@
 module github.com/istr/terraform-provider-gopass
 
-go 1.26.0
+go 1.27
 
 require (
 	github.com/gopasspw/gopass v1.17.2
