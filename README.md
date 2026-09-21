@@ -208,9 +208,39 @@ Reads all secrets under a path recursively as a nested object structure.
 - **Mixed structures**: Supports both flat and nested secrets in the same tree
 - **Dot-notation access**: All secrets accessible via standard Terraform dot-notation
 
-### gopass_env data source
+## Data Sources
 
-The `gopass_env` data source reads the same recursive, nested credential structure as the ephemeral resource, but exposes the result through normal Terraform data source state. Because data source results can be persisted in state, use the ephemeral resource instead when credentials must never be written to state or plan files.
+The data sources work exactly like their ephemeral counterparts, but
+exposes the result through normal Terraform data source state.
+
+Because data source results can be persisted in state, use the ephemeral resource instead when credentials must never be written to state or plan files.
+
+### gopass_secret (data source)
+
+The `gopass_secret` data source reads a single secret into the state.
+
+#### Example
+
+```hcl
+data "gopass_secret" "api_key" {
+  path = "services/api/token"
+}
+
+provider "example" {
+  api_key = data.gopass_secret.api_key.value
+}
+```
+
+#### Arguments and attributes
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `path` | string | yes | Path to the secret in the gopass store |
+| `value` | string | computed | Sensitive first-line secret value |
+
+### gopass_env (data source)
+
+The `gopass_env` data source reads the same recursive, nested credential structure as the ephemeral resource.
 
 #### Example: Read a credential set from a data source
 
@@ -232,29 +262,6 @@ provider "aws" {
 |------|------|----------|-------------|
 | `path` | string | yes | Path prefix in the gopass store |
 | `credentials` | dynamic object | computed | Sensitive nested object. Slash-separated paths become nested attributes, for example `API/v2/KEY` becomes `credentials.API.v2.KEY`. |
-
-### gopass_secret data source
-
-Reads the first line of a single secret from gopass. The `value` attribute is sensitive, but data source results can be persisted in Terraform state. Use the `gopass_secret` ephemeral resource instead when the value must not be written to state or plan files.
-
-#### Example
-
-```hcl
-data "gopass_secret" "api_key" {
-  path = "services/api/token"
-}
-
-provider "example" {
-  api_key = data.gopass_secret.api_key.value
-}
-```
-
-#### Arguments and attributes
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `path` | string | yes | Path to the secret in the gopass store |
-| `value` | string | computed | Sensitive first-line secret value |
 
 ## Managed Resources
 
