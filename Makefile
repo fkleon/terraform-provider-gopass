@@ -2,7 +2,7 @@
 # ===================================
 
 BINARY_NAME = terraform-provider-gopass
-VERSION     = 0.1.0
+VERSION     = $(shell git describe --tags --always --dirty)
 OS_ARCH     = $(shell go env GOOS)_$(shell go env GOARCH)
 
 # OpenTofu/Terraform plugin directories
@@ -22,6 +22,7 @@ help:
 	@echo "  make install      Install to both OpenTofu and Terraform plugin dirs"
 	@echo "  make install-tofu Install to OpenTofu plugin directory only"
 	@echo "  make install-tf   Install to Terraform plugin directory only"
+	@echo "  make release      Build the release binaries for all targets"
 	@echo ""
 	@echo "Development targets:"
 	@echo "  make test         Run tests"
@@ -82,8 +83,4 @@ docs:
 
 # Release build (cross-compile)
 release:
-	@mkdir -p dist
-	GOOS=linux GOARCH=amd64 go build -ldflags="-X main.version=$(VERSION)" -o dist/$(BINARY_NAME)_$(VERSION)_linux_amd64
-	GOOS=linux GOARCH=arm64 go build -ldflags="-X main.version=$(VERSION)" -o dist/$(BINARY_NAME)_$(VERSION)_linux_arm64
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-X main.version=$(VERSION)" -o dist/$(BINARY_NAME)_$(VERSION)_darwin_amd64
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-X main.version=$(VERSION)" -o dist/$(BINARY_NAME)_$(VERSION)_darwin_arm64
+	@goreleaser build --clean --snapshot
