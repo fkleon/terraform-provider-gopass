@@ -152,6 +152,13 @@ func (m *mockStore) Close(ctx context.Context) error {
 	return nil
 }
 
+func (m *mockStore) AuditList(ctx context.Context) ([]string, error) {
+	if m.shouldFail {
+		return nil, errors.New(m.failMsg)
+	}
+	return nil, nil
+}
+
 func TestGopassClient_Constructor(t *testing.T) {
 	// Test with empty path
 	client := NewGopassClient("")

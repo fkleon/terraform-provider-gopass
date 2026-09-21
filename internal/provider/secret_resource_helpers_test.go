@@ -59,3 +59,7 @@ func (s *mockSecret) Bytes() []byte {
 	}
 	return []byte(result)
 }
+
+func (s *mockSecret) Ref() (string, bool) {
+	return "", false
+}
