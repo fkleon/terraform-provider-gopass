@@ -26,24 +26,50 @@ as **ephemeral values** or sensitive data source values, depending on how they a
 
 ## Installation
 
-### From Source
+This provider is not published in the Terraform or OpenTofu provider registries. Install it through a local filesystem mirror instead.
 
-```bash
-git clone https://github.com/istr/terraform-provider-gopass.git
-cd terraform-provider-gopass
-make install
+### Configure a Local Filesystem Mirror
+
+Add the following to `~/.tofurc` for OpenTofu or `~/.terraformrc` for Terraform. Replace the mirror path with a directory on your machine:
+
+```hcl
+provider_installation {
+  filesystem_mirror {
+    path = "/home/user/.local/share/opentofu/plugins"
+  }
+
+  direct {
+    exclude = ["registry.opentofu.org/istr/gopass"]
+  }
+}
 ```
 
-### Manual Installation
+The `direct` exclusion is required so OpenTofu/Terraform does not try to look up this provider in the public registry after checking the filesystem mirror.
+
+### Build and Install from Source
 
 ```bash
-# Build
-go build -o terraform-provider-gopass
-
-# Install for OpenTofu
-mkdir -p ~/.local/share/opentofu/plugins/registry.opentofu.org/istr/gopass/0.1.0/linux_amd64
-cp terraform-provider-gopass ~/.local/share/opentofu/plugins/registry.opentofu.org/istr/gopass/0.1.0/linux_amd64/
+make install-tofu # install for OpenTofu
+make install-tf # install for Terraform
 ```
+
+### Install from Release Artifact
+
+Download the release archive for your operating system and architecture from the project's [GitHub Releases](https://github.com/fkleon/terraform-provider-gopass/releases) page. Extract the provider binary into the mirror directory using the provider source, version, and platform layout:
+
+```bash
+VERSION=0.1.0
+OS_ARCH=linux_amd64
+PLUGIN_DIR="$HOME/.local/share/opentofu/plugins/registry.opentofu.org/istr/gopass/$VERSION/$OS_ARCH"
+RELEASE_ARCHIVE="terraform-provider-gopass_${VERSION}_${OS_ARCH}.tar.gz" # use the exact downloaded filename
+
+mkdir -p "$PLUGIN_DIR"
+tar -xzf "$RELEASE_ARCHIVE" -C "$PLUGIN_DIR"
+```
+
+Use the release archive matching your platform and architecture, such as `linux_amd64`. The available release targets are listed on the release page. The extracted directory must contain the `terraform-provider-gopass` executable directly, not another nested directory.
+
+If you use Terraform rather than OpenTofu, use the filesystem mirror directory configured for Terraform and place the artifact under the equivalent `registry.opentofu.org/istr/gopass/<version>/<os>_<arch>/` path.
 
 ## Usage
 
